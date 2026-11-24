@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.math.RoundingMode;
 
 @Service
 public class TransactionService {
@@ -21,7 +22,11 @@ public class TransactionService {
         if (type == null) {
             throw new IllegalArgumentException("Type is required");
         }
-        if (amount == null || amount.signum() <= 0) {
+        if (amount == null) {
+            throw new IllegalArgumentException("Amount is required");
+        }
+        BigDecimal rounded = amount.setScale(2, RoundingMode.HALF_UP);
+        if (rounded.signum() <= 0) {
             throw new IllegalArgumentException("Amount must be greater than zero");
         }
         if (type == TransactionType.EXPENSE && (category == null || category.isBlank())) {
@@ -29,7 +34,7 @@ public class TransactionService {
         }
         LocalDate effectiveDate = date != null ? date : LocalDate.now();
         Transaction transaction = new Transaction(
-                UUID.randomUUID(), type, amount, effectiveDate, description, category);
+                UUID.randomUUID(), type, rounded, effectiveDate, description, category);
         store.computeIfAbsent(userId, _ -> new CopyOnWriteArrayList<>()).add(transaction);
         return transaction;
     }
