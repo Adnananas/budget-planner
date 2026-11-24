@@ -16,3 +16,12 @@
 | 8 | Reload the page | Data is still there | |
 
 **Overall result:** passed / failed
+
+## v1.0.1 (TT.MM.2026)
+
+Hotfix release, built from `release/1.0`.
+
+### Fixed
+
+- Amounts with more than two decimal places are rounded to two decimals (HALF_UP).
+- Amounts that round to zero are rejected.
