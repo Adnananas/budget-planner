@@ -7,14 +7,20 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
 jobs:
   assets:
     name: Build and attach release files
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v4
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '25'
@@ -24,22 +30,31 @@ jobs:
         working-directory: backend
         run: mvn -B package
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
-          node-version: '24.22.3'
+          node-version: '24'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Build frontend
+      - name: Install and build frontend
         working-directory: frontend
         run: |
           npm ci
           npm run build
 
-      - name: Zip frontend
+      - name: Zip frontend distribution
         run: cd frontend/dist && zip -r ../../frontend-dist.zip .
 
-      - name: Upload files to the release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.event.release.tag_name }}" backend/target/*.jar frontend-dist.zip --clobber
+      - name: Generate checksums
+        run: |
+          # Erstellt eine SHA256SUMS-Datei für alle relevanten Artefakte
+          sha256sum backend/target/*.jar frontend-dist.zip > SHA256SUMS
+
+      - name: Upload assets to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            backend/target/*.jar
+            frontend-dist.zip
+            SHA256SUMS
