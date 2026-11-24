@@ -52,4 +52,18 @@ class TransactionServiceTest {
 
         assertTrue(service.list("u2").isEmpty());
     }
+
+    @Test
+    void amountIsRoundedToTwoDecimals() {
+        service.add("u1", TransactionType.INCOME, new BigDecimal("10.005"), null, "x", null);
+
+        assertEquals(new BigDecimal("10.01"), service.balance("u1"));
+    }
+
+    @Test
+    void rejectsAmountThatRoundsToZero() {
+        assertThrows(IllegalArgumentException.class, () ->
+                service.add("u1", TransactionType.INCOME, new BigDecimal("0.004"), null, "x", null));
+    }
+    
 }
